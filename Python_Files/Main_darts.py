@@ -4,19 +4,13 @@ import regions
 import skimage
 import skimage.measure as Ss
 import math
-
-#import props
-
+from skimage.morphology import disk ,binary_dilation
 from skimage.measure import label ,regionprops
-
-
 from skimage import feature , transform
-
 import skimage.measure as SS 
 from skimage.filters import gaussian, threshold_otsu
 from skimage.io import imread, imshow
-from skimage.color import rgb2gray
-
+from skimage.color import rgb2gray,rgb2grey
 from skimage.morphology import reconstruction
 from matplotlib import pyplot as plt
 
@@ -142,6 +136,91 @@ def get_score(base_image,dart_image):
 
     
 
+    
+    #### Gausian filter images ::
+
+    sigma = 5
+
+    backgroundImageBlur = gaussian(backgroundImage,sigma=sigma,multichannel=False)
+
+    dartImageBlur = gaussian(dart_image,sigma=sigma,multichannel=False)
+
+
+    ###### Difference of 2 Images 
+
+    #imshow(np.subtract(dartImageBlur,backgroundImageBlur))
+    #plt.show()
+
+
+
+
+    blueDiff = rgb2gray(np.subtract(dartImageBlur,backgroundImageBlur))
+
+    imshow(blueDiff)
+    plt.show()
+
+
+    grayDiff =rgb2gray(np.subtract(backgroundImageBlur,dartImageBlur))
+    imshow(blueDiff)
+    plt.show()    
+
+    #Temmp = rgb2gray(np.add(blueDiff,grayDiff))
+
+
+    #imshow(Temmp)
+    #plt.show()  
+
+
+    dart = np.multiply(grayDiff,My_Mask.board)
+    #imshow(dart)
+    #plt.show() 
+
+
+
+    ####Find primary orientation of largest difference region
+    [rows, columns, channels] = backgroundImage.shape
+
+    dart_square = np.power(dart,2)
+
+    SE = disk(np.round(rows/100))
+
+    dart_thresh = threshold_otsu(dart_square)
+
+
+
+    dart_square = dart_square>0.2
+
+    #imshow(dart_square)
+    #plt.show() 
+
+    My_Mask.dart = binary_dilation(np.multiply(dart_square,dart_thresh),selem=SE)
+
+    #imshow(My_Mask.dart)
+    #plt.show() 
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
 
 
 
@@ -171,7 +250,9 @@ class Mask:
         self.double=None
         self.trible=None 
         self.inner_bull=None 
-        self.outer_bull=None 
+        self.outer_bull=None
+        self.dart = None 
+
 
 class Region:
     def __init__(self):
@@ -183,10 +264,26 @@ class Region:
 
 
 
+def rgb2gray_mine(rgb):
 
-board_img =imread("dartBoard.jpg")
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
 
-dart_img =imread("dart18.jpg")   
+    return gray
+
+
+
+
+
+
+
+
+
+
+
+board_img =imread("E:/My_project/images/board1.jpg")
+
+dart_img =imread("E:/My_project/images/dart1.jpg")   
 
 get_score(board_img,dart_img)
 
