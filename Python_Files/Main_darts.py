@@ -43,7 +43,8 @@ class Dart_Detection():
     def __init__(self,boardImage):
         self.dartImage = None
         self.dartScore = None
-        self.boardImage = boardImage
+        self.boardImage = transform.rescale(boardImage, 0.8, anti_aliasing=True,multichannel=True)
+        self.boardImage = skimage.img_as_ubyte(self.boardImage)
         self.myMask = Mask()
         self.boardImage = utils.crop_image(self.boardImage)
         if(self.boardImage is not None):
@@ -54,7 +55,8 @@ class Dart_Detection():
         if(self.boardImage is None):
             return False
         else:
-            self.dartImage = dart_image
+            self.dartImage = transform.rescale(dart_image, 0.8, anti_aliasing=True,multichannel=True)
+            self.dartImage = skimage.img_as_ubyte(self.dartImage)
             ### crop dart image
             self.dartImage = utils.crop_image(self.dartImage)
             if(self.dartImage is None):
@@ -109,7 +111,6 @@ class Dart_Detection():
             self.dartImage = utils.alignImages(self.dartImage,self.boardImage)
             
             ###### Difference of 2 Images 
-            
             diff = utils.mse(self.boardImage,self.dartImage)
             if(diff == 0):### the two images are the same
                 return False
@@ -150,7 +151,7 @@ class Dart_Detection():
             hit_region = skimage.img_as_ubyte(self.myMask.hit)
             cnts = cv2.findContours(hit_region, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
             cnts = imutils.grab_contours(cnts)
-            cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 8)
+            cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 5)
 
             return self.dartScore
 
@@ -164,11 +165,11 @@ class Dart_Detection():
 
         ###detect red regions in the board
         redRegions = image[:,:,0]-grayImage
-        self.myMask.red = redRegions > threshold_otsu(redRegions) -0.05
+        self.myMask.red = redRegions > threshold_otsu(redRegions)
 
         ###detect green regions in the board
         greenRegions = image[:,:,1]-grayImage
-        self.myMask.green = greenRegions > (-threshold_otsu(greenRegions)) - 0.05
+        self.myMask.green = greenRegions > (-threshold_otsu(greenRegions))
 
         ###detect multipliers regions
         self.myMask.multipliers=self.myMask.red + self.myMask.green
@@ -289,7 +290,7 @@ if __name__ == "__main__":
     if(dart_detection.boardImage is None):
         print("please Take another photo with a clear DART BOARD !!!")
         exit()
-    dartImage = imread("../test_images/dart14.jpg")
+    dartImage = imread("../test_images/dart7.jpg")
     score = dart_detection.computeScore(dartImage)
     if(score):
         print(score)
