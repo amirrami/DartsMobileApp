@@ -71,11 +71,16 @@ def  crop_image(image):
     seed = np.copy(~BWImage)
     seed[1:-1, 1:-1] = (~BWImage).max()
     mask = ~BWImage
-    background = reconstruction(seed, mask, method='erosion')
+    try:
+        background = reconstruction(seed, mask, method='erosion')
+    except:
+        return None
 
     ### get bounding box
     label_img = label(background)
     region = regionprops(label_img)
+    if(len(region) == 0):
+        return None
     max_index = get_max_index(region)
 
     ## cropping image

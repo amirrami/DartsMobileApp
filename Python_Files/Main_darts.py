@@ -41,107 +41,117 @@ class Region:
 
 class Dart_Detection():
     def __init__(self,boardImage):
-        self.boardImage = boardImage
         self.dartImage = None
-        self.myMask = Mask()
         self.dartScore = None
+        self.boardImage = boardImage
+        self.myMask = Mask()
         self.boardImage = utils.crop_image(self.boardImage)
-        self.outputBoardImage = self.boardImage
+        if(self.boardImage is not None):
+            self.outputBoardImage = self.boardImage
 
 
     def computeScore(self,dart_image):    
-        
-        self.dartImage = dart_image
+        if(self.boardImage is None):
+            return False
+        else:
+            self.dartImage = dart_image
+            ### crop dart image
+            self.dartImage = utils.crop_image(self.dartImage)
+            if(self.dartImage is None):
+                return False
+            #### Create Pointmap that contain all regions of the dart board
+            self.findRegionMasks()
 
-        ### crop dart image
-        self.dartImage = utils.crop_image(self.dartImage)
-        
-        #### Create Pointmap that contain all regions of the dart board
-        self.findRegionMasks()
+            ### get the center of the inner bull of the dart board
+            label_img = label(self.myMask.inner_bull)
+            region = regionprops(label_img)
+            if(len(region)==0):
+                return False
+            max_index = utils.get_max_index(region)
+            center = region[max_index].centroid
 
-        ### get the center of the inner bull of the dart board
-        label_img = label(self.myMask.inner_bull)
-        region = regionprops(label_img)
-        max_index = utils.get_max_index(region)
-        center = region[max_index].centroid
+            ### Edge image for straight line detection
+            grayBackgroundImage = rgb2gray(self.boardImage)
+            temp_image = grayBackgroundImage * self.myMask.board
+            edgeImage = feature.canny(temp_image,high_threshold=0.4,low_threshold=0.2)
+            tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 3600)
+            [H,theta,rho] = transform.hough_line(edgeImage,theta=tested_angles)
+            thresh = np.amax(H)
+            thresh = np.ceil(thresh*0.05)
+            
+            ### Detect Peaks
+            hspace, angle, dists = transform.hough_line_peaks(H,theta,rho,num_peaks=10,threshold=thresh)
 
-        ### Edge image for straight line detection
-        grayBackgroundImage = rgb2gray(self.boardImage)
-        temp_image = grayBackgroundImage * self.myMask.board
-        edgeImage = feature.canny(temp_image,high_threshold=0.4,low_threshold=0.2)
-        tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 3600)
-        [H,theta,rho] = transform.hough_line(edgeImage,theta=tested_angles)
-        thresh = np.amax(H)
-        thresh = np.ceil(thresh*0.05)
-        
-        ### Detect Peaks
-        hspace, angle, dists = transform.hough_line_peaks(H,theta,rho,num_peaks=10,threshold=thresh)
+            ##### change angles theta to degrees 
+            theta_degree= np.degrees(angle)
+            angles = []
+            angles_180 =[]
+            for a in theta_degree:
+                angles.append(a-90+360)
+                angles_180.append(a+90+360)
+            
+            ###  angles - Zero degrees = up 
+            Angles = np.concatenate((angles,angles_180),axis=0)
+            Angles = np.mod(Angles,360)
+            Angles = np.sort(Angles)
 
-        ##### change angles theta to degrees 
-        theta_degree= np.degrees(angle)
-        angles = []
-        angles_180 =[]
-        for a in theta_degree:
-            angles.append(a-90+360)
-            angles_180.append(a+90+360)
-        
-        ###  angles - Zero degrees = up 
-        Angles = np.concatenate((angles,angles_180),axis=0)
-        Angles = np.mod(Angles,360)
-        Angles = np.sort(Angles)
+            ### construct the 20 region of the dart board
+            regions_values = [10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13, 6]
+            regions_details = []
+            for i in range(len(regions_values)):
+                region = Region()
+                region.minAngle = Angles[i]
+                region.maxAngle = Angles[np.mod(i+1,np.size(Angles))]
+                region.value = regions_values[i]
+                regions_details.append(region)
 
-        ### construct the 20 region of the dart board
-        regions_values = [10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13, 6]
-        regions_details = []
-        for i in range(len(regions_values)):
-            region = Region()
-            region.minAngle = Angles[i]
-            region.maxAngle = Angles[np.mod(i+1,np.size(Angles))]
-            region.value = regions_values[i]
-            regions_details.append(region)
+            ### align the two images using SIFT TECHNIQUE
+            self.dartImage = utils.alignImages(self.dartImage,self.boardImage)
+            
+            ###### Difference of 2 Images 
+            
+            if(self.dartImage.all() == self.boardImage.all()):### the two images are the same
+                return False
+            diff_image = utils.computeDifference(cv2.cvtColor(self.dartImage,cv2.COLOR_RGB2GRAY),cv2.cvtColor(self.boardImage,cv2.COLOR_RGB2GRAY))
+            dart = np.multiply(diff_image,self.myMask.board)
 
-        ### align the two images using SIFT TECHNIQUE
-        self.dartImage = utils.alignImages(self.dartImage,self.boardImage)
-        
-        ###### Difference of 2 Images 
-        diff_image = utils.computeDifference(cv2.cvtColor(self.dartImage,cv2.COLOR_RGB2GRAY),cv2.cvtColor(self.boardImage,cv2.COLOR_RGB2GRAY))
-        dart = np.multiply(diff_image,self.myMask.board)
+            ####Find primary orientation of largest difference region
+            [rows, columns, channels] = self.boardImage.shape
+            dart_square = np.power(dart,2)
+            SE = disk(np.round(rows/100))
+            dart_square_threshed = dart_square > 0.2 * threshold_otsu(dart_square)
+            self.myMask.dart = binary_dilation(dart_square_threshed,selem=SE)
+            label_img = label(self.myMask.dart)
+            region = regionprops(label_image=label_img)
+            max_index = utils.get_max_index(region)
 
-        ####Find primary orientation of largest difference region
-        [rows, columns, channels] = self.boardImage.shape
-        dart_square = np.power(dart,2)
-        SE = disk(np.round(rows/100))
-        dart_square_threshed = dart_square > 0.2 * threshold_otsu(dart_square)
-        self.myMask.dart = binary_dilation(dart_square_threshed,selem=SE)
-        label_img = label(self.myMask.dart)
-        region = regionprops(label_image=label_img)
-        max_index = utils.get_max_index(region)
+            #get the oriention in degrees
+            orientation = region[max_index].orientation
+            orientation = np.degrees(orientation)-90 # -90 to adjust the orientation
 
-        #get the oriention in degrees
-        orientation = region[max_index].orientation
-        orientation = np.degrees(orientation)-90 # -90 to adjust the orientation
+            #get the line structure elemet with orientation
+            SE_line = utils.strel_line(length=50,degrees=orientation)
 
-        #get the line structure elemet with orientation
-        SE_line = utils.strel_line(length=50,degrees=orientation)
+            #close using the line to get the true shape of dart touching the board
+            self.myMask.dart = closing(dart_square_threshed,selem=SE_line)
 
-        #close using the line to get the true shape of dart touching the board
-        self.myMask.dart = closing(dart_square_threshed,selem=SE_line)
+            #get the contours of the dart then detect the extrem left point which is the point the dart touch the board in
+            gray_dart = skimage.img_as_ubyte(self.myMask.dart)
+            cnts = cv2.findContours(gray_dart, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
+            cnts = imutils.grab_contours(cnts)
+            c = max(cnts, key=cv2.contourArea)
+            extLeft = tuple(c[c[:, :, 0].argmin()][0])
 
-        #get the contours of the dart then detect the extrem left point which is the point the dart touch the board in
-        gray_dart = skimage.img_as_ubyte(self.myMask.dart)
-        cnts = cv2.findContours(gray_dart, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        c = max(cnts, key=cv2.contourArea)
-        extLeft = tuple(c[c[:, :, 0].argmin()][0])
+            ### compare the xhit and yhit of the dart with board to know which region the dart hit
+            self.dartScore = self.find_hitRegion(xhit=extLeft[0],yhit=extLeft[1],center=center,region=regions_details)
 
-        ### compare the xhit and yhit of the dart with board to know which region the dart hit
-        self.dartScore = self.find_hitRegion(xhit=extLeft[0],yhit=extLeft[1],center=center,region=regions_details)
+            ### draw a contour of the hit region
+            hit_region = skimage.img_as_ubyte(self.myMask.hit)
+            cnts = cv2.findContours(hit_region, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
+            cnts = imutils.grab_contours(cnts)
+            cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 8)
 
-        ### draw a contour of the hit region
-        hit_region = skimage.img_as_ubyte(self.myMask.hit)
-        cnts = cv2.findContours(hit_region, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 8)
+            return self.dartScore
 
 
 
@@ -266,10 +276,6 @@ class Dart_Detection():
 
         return score
 
-    
-    def get_score(self):
-        return self.dartScore
-    
 
     def get_outputImage(self):
         return self.outputBoardImage
@@ -279,8 +285,15 @@ class Dart_Detection():
 if __name__ == "__main__":
     dartBoardImage = imread("../test_images/dartBoard2.jpg")
     dart_detection = Dart_Detection(dartBoardImage)
+    if(dart_detection.boardImage is None):
+        print("please Take another photo with a clear DART BOARD !!!")
+        exit()
     dartImage = imread("../test_images/dart14.jpg")
-    dart_detection.computeScore(dartImage)
-    print(dart_detection.get_score())
-    imshow(dart_detection.get_outputImage())
-    plt.show()
+    score = dart_detection.computeScore(dartImage)
+    if(score):
+        print(score)
+        imshow(dart_detection.get_outputImage())
+        plt.show()
+    else:
+        print("please Take another photo with a clear DART BOARD !!!")
+        exit()
