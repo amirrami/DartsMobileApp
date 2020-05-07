@@ -48,7 +48,7 @@ def alignImages(im1, im2):
   height, width, channels = im2.shape
   im1Reg = cv2.warpPerspective(im1, h, (width, height))
   
-  return im1Reg, h
+  return im1Reg
 
 
 

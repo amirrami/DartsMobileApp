@@ -14,10 +14,10 @@ def findRegionMasks(image,My_Mask):
     grayImage = rgb2gray(image)
     image_red = image.copy()
     redRegions = image_red[:,:,0]-grayImage
-    My_Mask.red = redRegions > threshold_otsu(redRegions)
+    My_Mask.red = redRegions > threshold_otsu(redRegions) -0.05
 
     greenRegions = image[:,:,1]-grayImage
-    My_Mask.green = greenRegions > (-threshold_otsu(greenRegions))
+    My_Mask.green = greenRegions > (-threshold_otsu(greenRegions)) - 0.05
 
     My_Mask.multipliers=My_Mask.red + My_Mask.green
 

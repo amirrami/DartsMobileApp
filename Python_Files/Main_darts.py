@@ -1,6 +1,5 @@
 import cv2
 import numpy as np 
-import imutils
 import regions
 import skimage
 import skimage.measure as Ss
@@ -8,13 +7,16 @@ import math
 from skimage.morphology import disk, rectangle ,binary_dilation,closing
 from skimage.measure import label ,regionprops
 from skimage import feature , transform
-import skimage.measure as SS 
 from skimage.filters import gaussian, threshold_otsu
 from skimage.io import imread, imshow
 from skimage.color import rgb2gray,rgb2grey
 from skimage.morphology import reconstruction
 from matplotlib import pyplot as plt
 from alignImages import alignImages
+import imutils
+from Score import getScore
+import scipy as sp
+import scipy.ndimage
 
 
 def get_score(base_image,dart_image):
@@ -22,25 +24,20 @@ def get_score(base_image,dart_image):
     My_Mask = Mask()  #### class mask 
 
     backgroundImage = skimage.img_as_float64(base_image)
-    dartImage= skimage.img_as_float64(dart_image)
-
     grayBackgroundImage = rgb2gray(backgroundImage)
 
-    BWBackgroundImage = grayBackgroundImage > threshold_otsu(grayBackgroundImage)
+    #BWBackgroundImage = grayBackgroundImage > threshold_otsu(grayBackgroundImage)
 
 
     ### imfill done :) 
-    seed = np.copy(~BWBackgroundImage)
-    seed[1:-1, 1:-1] = ~BWBackgroundImage.max()
-    mask = ~BWBackgroundImage
 
-    My_Mask.background = reconstruction(seed, mask, method='dilation')
+
+    #My_Mask.background = flood_fill(~BWBackgroundImage)
 
     
     ##### cancel cropping to both images 
     #S = SS.regionprops_table(temp, properties = ['bbox','area'])
     
-    grayDartImage = rgb2gray(dartImage)
 
     [rows, columns, channels] = backgroundImage.shape
     
@@ -55,7 +52,8 @@ def get_score(base_image,dart_image):
 
     region = regionprops(label_img)
 
-    center = region[0].centroid
+    max_index = get_max_index(region)
+    center = region[max_index].centroid
 
 
     ##### Edge image for straight line detection
@@ -132,30 +130,22 @@ def get_score(base_image,dart_image):
     for i in range(len(regions_values)):
         region = Region()
         region.minAngle = Angles[i]
-        region.maxAngle = Angles[np.mod(i,np.size(angles))+1]
+        region.maxAngle = Angles[np.mod(i+1,np.size(Angles))]
         region.value = regions_values[i]
         regions_details.append(region)
 
-    ### align the two images
+    ### align the two images using SIFT TECHNIQUE
     dart_image = alignImages(dart_image,base_image)
+    
 
-    #### Gausian filter images ::
-
-    sigma = 5
-
-    backgroundImageBlur = gaussian(backgroundImage,sigma=sigma,multichannel=True)
-
-    dartImageBlur = gaussian(dart_image,sigma=sigma,multichannel=True)
-
-
+    diff_image = computeDifference(cv2.cvtColor(dart_image,cv2.COLOR_RGB2GRAY),cv2.cvtColor(base_image,cv2.COLOR_RGB2GRAY))
+    
     ###### Difference of 2 Images 
-
-    blurDiff = rgb2gray(dartImageBlur-backgroundImageBlur)
-    blurDiff = blurDiff > (-threshold_otsu(blurDiff)) - 0.1
-
-    grayDiff =rgb2gray(np.subtract(backgroundImageBlur,dartImageBlur))
-    grayDiff = grayDiff > (threshold_otsu(grayDiff))
-    dart = np.multiply((grayDiff+blurDiff),My_Mask.board)
+    #blurDiff = rgb2gray(dartImageBlur-backgroundImageBlur)
+    #blurDiff = blurDiff < (threshold_otsu(blurDiff)) + 0.05
+    #grayDiff = rgb2gray(np.subtract(backgroundImageBlur,dartImageBlur))
+    #grayDiff = grayDiff > (threshold_otsu(grayDiff)) - 0.05
+    dart = np.multiply(diff_image,My_Mask.board)
 
 
     ####Find primary orientation of largest difference region
@@ -166,94 +156,52 @@ def get_score(base_image,dart_image):
     My_Mask.dart = binary_dilation(dart_square_threshed,selem=SE)
 
     label_img = label(My_Mask.dart)
-    region = regionprops(label_img)
-    max_area = 0
-    max_area_index = 0
-    if len(region) > 1:
-        for i in range(len(region)):
-            if region[i].area > max_area:
-                max_area = region[i].area
-                max_area_index = i
-    elif len(region) == 1:
-        max_area = region[0].area
-        max_area_index = 0
-    
-    SE = rectangle(50,50,dtype=np.float64)
-    My_Mask.dart = closing(My_Mask.dart,selem=SE)
+    region = regionprops(label_image=label_img)
 
+    #get the the index of the region with max area
+    max_index = get_max_index(region)
 
+    #get the oriention in degrees
+    orientation = region[max_index].orientation
+    orientation = np.degrees(orientation)-90 # -90 to adjust the orientation
 
-    label_img = label(My_Mask.dart)
-    region = regionprops(label_img)
+    #get the line structure elemet with orientation
+    SE_line = strel_line(length=50,degrees=orientation)
 
-    max_area = 0
-    max_area_index = 0
-    if len(region) > 1:
-        for i in range(len(region)):
-            if region[i].area > max_area:
-                max_area = region[i].area
-                max_area_index = i
-    elif len(region) == 1:
-        max_area = region[0].area
-        max_area_index = 0
-    
-     
+    #close using the line to get the true shape of dart touching the board
+    My_Mask.dart = closing(dart_square_threshed,selem=SE_line)
 
-
-
-    ##### trial extrema 
-    #uint_img = np.array(My_Mask.dart*255).astype('uint8')
-
-    #grayImage = cv2.cvtColor(uint_img, cv2.COLOR_GRAY2BGR)
-    mask_gray = skimage.img_as_ubyte(My_Mask.dart)
-    cnts= cv2.findContours(mask_gray, cv2.RETR_CCOMP,
-	cv2.CHAIN_APPROX_SIMPLE)
+    #get the contours of the dart then detect the extrem left point which is the point the dart touch the board in
+    gray_dart = skimage.img_as_ubyte(My_Mask.dart)
+    cnts = cv2.findContours(gray_dart, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
     c = max(cnts, key=cv2.contourArea)
     extLeft = tuple(c[c[:, :, 0].argmin()][0])
-    extRight = tuple(c[c[:, :, 0].argmax()][0])
-    extTop = tuple(c[c[:, :, 1].argmin()][0])
-    extBot = tuple(c[c[:, :, 1].argmax()][0])
 
-    
-    
+    score ,My_Mask.hit = getScore(xhit=extLeft[0],yhit=extLeft[1],center=center,region=regions_details,My_Mask=My_Mask)
 
+    hit_region = skimage.img_as_ubyte(My_Mask.hit)
+    cnts = cv2.findContours(hit_region, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    cv2.drawContours(dart_image, cnts, -1, (0, 255, 0), 5) 
 
-
-
-
-
-
+    print("Dart Hits: "+str(score))
+    imshow(dart_image)
+    plt.show()
 
 
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-def image_fill (gray):
-    des = cv2.bitwise_not(gray)
-    contour,hier = cv2.findContours(des,cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
-
-    for cnt in contour:
-        cv2.drawContours(des,[cnt],0,255,-1)
-
-    gray = cv2.bitwise_not(des)
-    return gray 
-
-
+def get_max_index(region):
+    max_area = 0
+    max_area_index = 0
+    if len(region) > 1:
+        for i in range(len(region)):
+            if region[i].area > max_area:
+                max_area = region[i].area
+                max_area_index = i
+    elif len(region) == 1:
+        max_area = region[0].area
+        max_area_index = 0
+    return max_area_index
 
 class Mask:
     def __init__(self):
@@ -278,30 +226,81 @@ class Region:
         self.maxAngle = None
         self.value = None
 
+def bresenham(x0, y0, x1, y1):
+   points = []
+   dx = abs(x1 - x0)
+   dy = abs(y1 - y0)
+   x, y = x0, y0
+   sx = -1 if x0 > x1 else 1
+   sy = -1 if y0 > y1 else 1
+   if dx > dy:
+      err = dx / 2.0
+      while x != x1:
+         points.append((x, y))
+         err -= dy
+         if err < 0:
+            y += sy
+            err += dx
+         x += sx
+   else:
+      err = dy / 2.0
+      while y != y1:
+         points.append((x, y))
+         err -= dx
+         if err < 0:
+            x += sx
+            err += dy
+         y += sy
+   points.append((x, y))
+
+   return points
+
+
+def strel_line(length, degrees):
+   if length >= 1:
+      theta = degrees * np.pi / 180
+      x = round((length - 1) / 2 * np.cos(theta))
+      y = -round((length - 1) / 2 * np.sin(theta))
+      points = bresenham(-x, -y, x, y)
+      points_x = [point[0] for point in points]
+      points_y = [point[1] for point in points]
+      n_rows = int(2 * max([abs(point_y) for point_y in points_y]) + 1)
+      n_columns = int(2 * max([abs(point_x) for point_x in points_x]) + 1)
+      strel = np.zeros((n_rows, n_columns))
+      rows = ([point_y + max([abs(point_y) for point_y in points_y]) for point_y in points_y])
+      columns = ([point_x + max([abs(point_x) for point_x in points_x]) for point_x in points_x])
+      idx = []
+      for x in zip(rows, columns):
+         idx.append(np.ravel_multi_index((int(x[0]), int(x[1])), (n_rows, n_columns)))
+      strel.reshape(-1)[idx] = 1
+
+   return strel
 
 
 
 
-def rgb2gray_mine(rgb):
+def computeDifference(grey1,grey2):
+    # blur
+    grey2 = cv2.blur(grey2,(5,5))
+    grey1 = cv2.blur(grey1,(5,5))
+    #normalize
+    grey1 = cv2.equalizeHist(grey1)
+    grey2 = cv2.equalizeHist(grey2)
+    clahe = cv2.createCLAHE(clipLimit=5,tileGridSize=(10,10))
+    #clahe
+    grey1 = clahe.apply(grey1)
+    grey2 = clahe.apply(grey2)
+    #diff
+    diff = cv2.subtract(grey2,grey1) + cv2.subtract(grey1,grey2)
+    ret2,dif_thred = cv2.threshold(diff,70,255,cv2.THRESH_BINARY)
+    return dif_thred
 
-    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
-    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
 
-    return gray
+board_img =imread("dartBoard1.jpg")
 
-
-
-
-
-
-
-
-
-
-
-board_img =imread("E:/image_datasets/DartsMobileApp/test_images/dartBoard.jpg")
-
-dart_img =imread("E:/image_datasets/DartsMobileApp/test_images/dart18.jpg")   
+dart_img =imread("dart20.jpg")   
 
 get_score(board_img,dart_img)
+
+
 

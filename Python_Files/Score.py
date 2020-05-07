@@ -1,6 +1,8 @@
 import math 
 import numpy as np 
 from skimage import draw
+from skimage.io import imshow
+from matplotlib import pyplot as plt
 
 
 def getScore(xhit, yhit, center, region, My_Mask):
@@ -9,7 +11,7 @@ def getScore(xhit, yhit, center, region, My_Mask):
     x = int(xhit)
     y = int(yhit)
 
-    hitAngle = math.atan2(y-center[1],x-center[0])
+    hitAngle = math.atan2(y-center[0],x-center[1])
 
     hitAngle = np.mod((hitAngle * 180 / math.pi) + 360 ,360)
 
@@ -18,19 +20,19 @@ def getScore(xhit, yhit, center, region, My_Mask):
             hitRegion = i
             break
 
-    #if (hitAngle > region[19].minAngle) or (hitAngle <= region[19].maxAngle):
-    #   hitRegion = 19
+    if (hitAngle > region[19].minAngle) or (hitAngle <= region[19].maxAngle):
+       hitRegion = 19
     
     if (rows>=columns):
         Max=rows
     else:
         Max=columns
 
-    x1,y1 = pol2cart(np.degrees(region[hitRegion].minAngle),Max)
-    x2,y2 = pol2cart(np.degrees(region[hitRegion].maxAngle),Max)
+    x1,y1 = pol2cart(phi=region[hitRegion].minAngle,rho=Max)
+    x2,y2 = pol2cart(phi=region[hitRegion].maxAngle,rho=Max)
 
-    first_array = [center[0],x1+center[0],x2+center[0]]
-    second_array = [center[1],y1+center[0],y2+center[1]]
+    first_array = [center[1],x1+center[1],x2+center[1]]
+    second_array = [center[0],y1+center[0],y2+center[0]]
     shape=[rows,columns]
 
     My_Mask.hit = poly2mask(first_array,second_array,shape)
@@ -43,9 +45,9 @@ def getScore(xhit, yhit, center, region, My_Mask):
     elif (My_Mask.double[y][x]):
         score = score * 2
         My_Mask.hit= np.multiply(My_Mask.double,My_Mask.hit)
-    elif (My_Mask.trible[y][x]):
+    elif (My_Mask.triple[y][x]):
         score = score * 3
-        My_Mask.hit= np.multiply(My_Mask.trible,My_Mask.hit)
+        My_Mask.hit= np.multiply(My_Mask.triple,My_Mask.hit)
     elif(My_Mask.miss[y][x]):
         score = 0 
         My_Mask.hit = My_Mask.miss
@@ -62,17 +64,6 @@ def getScore(xhit, yhit, center, region, My_Mask):
     return score , My_Mask.hit
 
 
-    
-
-
-
-
-
-    
-
-
-
-
 
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
@@ -80,14 +71,14 @@ def cart2pol(x, y):
     return(rho, phi)
 
 def pol2cart(rho, phi):
-    x = rho * np.cos(phi)
-    y = rho * np.sin(phi)
+    x = rho * np.cos(np.radians(phi))
+    y = rho * np.sin(np.radians(phi))
     return(x, y)
 
 
 
 def poly2mask(vertex_row_coords, vertex_col_coords, shape):
-    fill_row_coords, fill_col_coords = draw.polygon(vertex_row_coords, vertex_col_coords, shape)
+    fill_row_coords, fill_col_coords = draw.polygon(vertex_col_coords,vertex_row_coords, shape)
     mask = np.zeros(shape, dtype=np.bool)
     mask[fill_row_coords, fill_col_coords] = True
     return mask
