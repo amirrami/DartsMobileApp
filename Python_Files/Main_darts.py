@@ -110,7 +110,8 @@ class Dart_Detection():
             
             ###### Difference of 2 Images 
             
-            if(self.dartImage.all() == self.boardImage.all()):### the two images are the same
+            diff = utils.mse(self.boardImage,self.dartImage)
+            if(diff == 0):### the two images are the same
                 return False
             diff_image = utils.computeDifference(cv2.cvtColor(self.dartImage,cv2.COLOR_RGB2GRAY),cv2.cvtColor(self.boardImage,cv2.COLOR_RGB2GRAY))
             dart = np.multiply(diff_image,self.myMask.board)
