@@ -1,10 +1,11 @@
 import cv2
 import numpy as np 
+import imutils
 import regions
 import skimage
 import skimage.measure as Ss
 import math
-from skimage.morphology import disk ,binary_dilation
+from skimage.morphology import disk, rectangle ,binary_dilation,closing
 from skimage.measure import label ,regionprops
 from skimage import feature , transform
 import skimage.measure as SS 
@@ -13,6 +14,7 @@ from skimage.io import imread, imshow
 from skimage.color import rgb2gray,rgb2grey
 from skimage.morphology import reconstruction
 from matplotlib import pyplot as plt
+from alignImages import alignImages
 
 
 def get_score(base_image,dart_image):
@@ -134,70 +136,86 @@ def get_score(base_image,dart_image):
         region.value = regions_values[i]
         regions_details.append(region)
 
-    
+    ### align the two images
+    dart_image = alignImages(dart_image,base_image)
 
-    
     #### Gausian filter images ::
 
     sigma = 5
 
-    backgroundImageBlur = gaussian(backgroundImage,sigma=sigma,multichannel=False)
+    backgroundImageBlur = gaussian(backgroundImage,sigma=sigma,multichannel=True)
 
-    dartImageBlur = gaussian(dart_image,sigma=sigma,multichannel=False)
+    dartImageBlur = gaussian(dart_image,sigma=sigma,multichannel=True)
 
 
     ###### Difference of 2 Images 
 
-    #imshow(np.subtract(dartImageBlur,backgroundImageBlur))
-    #plt.show()
-
-
-
-
-    blueDiff = rgb2gray(np.subtract(dartImageBlur,backgroundImageBlur))
-
-    imshow(blueDiff)
-    plt.show()
-
+    blurDiff = rgb2gray(dartImageBlur-backgroundImageBlur)
+    blurDiff = blurDiff > (-threshold_otsu(blurDiff)) - 0.1
 
     grayDiff =rgb2gray(np.subtract(backgroundImageBlur,dartImageBlur))
-    imshow(blueDiff)
-    plt.show()    
-
-    #Temmp = rgb2gray(np.add(blueDiff,grayDiff))
-
-
-    #imshow(Temmp)
-    #plt.show()  
-
-
-    dart = np.multiply(grayDiff,My_Mask.board)
-    #imshow(dart)
-    #plt.show() 
-
+    grayDiff = grayDiff > (threshold_otsu(grayDiff))
+    dart = np.multiply((grayDiff+blurDiff),My_Mask.board)
 
 
     ####Find primary orientation of largest difference region
     [rows, columns, channels] = backgroundImage.shape
-
     dart_square = np.power(dart,2)
-
     SE = disk(np.round(rows/100))
+    dart_square_threshed = dart_square > 0.2 * threshold_otsu(dart_square)
+    My_Mask.dart = binary_dilation(dart_square_threshed,selem=SE)
 
-    dart_thresh = threshold_otsu(dart_square)
+    label_img = label(My_Mask.dart)
+    region = regionprops(label_img)
+    max_area = 0
+    max_area_index = 0
+    if len(region) > 1:
+        for i in range(len(region)):
+            if region[i].area > max_area:
+                max_area = region[i].area
+                max_area_index = i
+    elif len(region) == 1:
+        max_area = region[0].area
+        max_area_index = 0
+    
+    SE = rectangle(50,50,dtype=np.float64)
+    My_Mask.dart = closing(My_Mask.dart,selem=SE)
 
 
 
-    dart_square = dart_square>0.2
+    label_img = label(My_Mask.dart)
+    region = regionprops(label_img)
 
-    #imshow(dart_square)
-    #plt.show() 
+    max_area = 0
+    max_area_index = 0
+    if len(region) > 1:
+        for i in range(len(region)):
+            if region[i].area > max_area:
+                max_area = region[i].area
+                max_area_index = i
+    elif len(region) == 1:
+        max_area = region[0].area
+        max_area_index = 0
+    
+     
 
-    My_Mask.dart = binary_dilation(np.multiply(dart_square,dart_thresh),selem=SE)
 
-    #imshow(My_Mask.dart)
-    #plt.show() 
 
+    ##### trial extrema 
+    #uint_img = np.array(My_Mask.dart*255).astype('uint8')
+
+    #grayImage = cv2.cvtColor(uint_img, cv2.COLOR_GRAY2BGR)
+    mask_gray = skimage.img_as_ubyte(My_Mask.dart)
+    cnts= cv2.findContours(mask_gray, cv2.RETR_CCOMP,
+	cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    c = max(cnts, key=cv2.contourArea)
+    extLeft = tuple(c[c[:, :, 0].argmin()][0])
+    extRight = tuple(c[c[:, :, 0].argmax()][0])
+    extTop = tuple(c[c[:, :, 1].argmin()][0])
+    extBot = tuple(c[c[:, :, 1].argmax()][0])
+
+    
     
 
 
@@ -281,9 +299,9 @@ def rgb2gray_mine(rgb):
 
 
 
-board_img =imread("E:/My_project/images/board1.jpg")
+board_img =imread("E:/image_datasets/DartsMobileApp/test_images/dartBoard.jpg")
 
-dart_img =imread("E:/My_project/images/dart1.jpg")   
+dart_img =imread("E:/image_datasets/DartsMobileApp/test_images/dart18.jpg")   
 
 get_score(board_img,dart_img)
 
