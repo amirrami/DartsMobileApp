@@ -12,8 +12,9 @@ from matplotlib import pyplot as plt
 
 def findRegionMasks(image,My_Mask):
     grayImage = rgb2gray(image)
-    image_red = image.copy()
-    redRegions = image_red[:,:,0]-grayImage
+
+    image = skimage.img_as_float64(image)
+    redRegions = image[:,:,0]-grayImage
     My_Mask.red = redRegions > threshold_otsu(redRegions) -0.05
 
     greenRegions = image[:,:,1]-grayImage

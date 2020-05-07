@@ -15,35 +15,23 @@ from matplotlib import pyplot as plt
 from alignImages import alignImages
 import imutils
 from Score import getScore
-import scipy as sp
-import scipy.ndimage
+
+from skimage import data
+from skimage.transform import hough_ellipse
+from skimage.draw import ellipse_perimeter
 
 
-def get_score(base_image,dart_image):
+def get_score(backgroundImage,dart_image):
     
     My_Mask = Mask()  #### class mask 
 
-    backgroundImage = skimage.img_as_float64(base_image)
-    grayBackgroundImage = rgb2gray(backgroundImage)
-
-    #BWBackgroundImage = grayBackgroundImage > threshold_otsu(grayBackgroundImage)
-
-
-    ### imfill done :) 
-
-
-    #My_Mask.background = flood_fill(~BWBackgroundImage)
-
-    
-    ##### cancel cropping to both images 
-    #S = SS.regionprops_table(temp, properties = ['bbox','area'])
-    
-
+    ### crop images
+    backgroundImage = crop_image(backgroundImage)
+    dart_image = crop_image(dart_image)
     [rows, columns, channels] = backgroundImage.shape
     
-
     #### Create Pointmap 
-
+      
     My_Mask= regions.findRegionMasks(backgroundImage,My_Mask)
 
     ### done :) 
@@ -57,6 +45,7 @@ def get_score(base_image,dart_image):
 
 
     ##### Edge image for straight line detection
+    grayBackgroundImage = rgb2gray(backgroundImage)
     temp_image = grayBackgroundImage * My_Mask.board 
 
     edgeImage = feature.canny(temp_image,high_threshold=0.4,low_threshold=0.2)
@@ -135,10 +124,10 @@ def get_score(base_image,dart_image):
         regions_details.append(region)
 
     ### align the two images using SIFT TECHNIQUE
-    dart_image = alignImages(dart_image,base_image)
+    dart_image = alignImages(dart_image,backgroundImage)
     
 
-    diff_image = computeDifference(cv2.cvtColor(dart_image,cv2.COLOR_RGB2GRAY),cv2.cvtColor(base_image,cv2.COLOR_RGB2GRAY))
+    diff_image = computeDifference(cv2.cvtColor(dart_image,cv2.COLOR_RGB2GRAY),cv2.cvtColor(backgroundImage,cv2.COLOR_RGB2GRAY))
     
     ###### Difference of 2 Images 
     #blurDiff = rgb2gray(dartImageBlur-backgroundImageBlur)
@@ -183,10 +172,8 @@ def get_score(base_image,dart_image):
     hit_region = skimage.img_as_ubyte(My_Mask.hit)
     cnts = cv2.findContours(hit_region, cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
-    cv2.drawContours(dart_image, cnts, -1, (0, 255, 0), 5) 
-
-    print("Dart Hits: "+str(score))
-    imshow(dart_image)
+    cv2.drawContours(backgroundImage, cnts, -1, (50, 255, 50), 8) 
+    imshow(backgroundImage)
     plt.show()
 
 
@@ -205,7 +192,7 @@ def get_max_index(region):
 
 class Mask:
     def __init__(self):
-        self.background=None 
+        self.background = None
         self.red = None 
         self.green = None 
         self.multipliers=None 
@@ -279,6 +266,7 @@ def strel_line(length, degrees):
 
 
 
+
 def computeDifference(grey1,grey2):
     # blur
     grey2 = cv2.blur(grey2,(5,5))
@@ -292,13 +280,40 @@ def computeDifference(grey1,grey2):
     grey2 = clahe.apply(grey2)
     #diff
     diff = cv2.subtract(grey2,grey1) + cv2.subtract(grey1,grey2)
-    ret2,dif_thred = cv2.threshold(diff,70,255,cv2.THRESH_BINARY)
+    dif_thred = diff > threshold_otsu(diff)
+    dif_thred = skimage.img_as_ubyte(dif_thred)    
     return dif_thred
 
 
-board_img =imread("dartBoard1.jpg")
+def crop_image(image):
+    gray_image = rgb2gray(image)
+    blur_image = gaussian(gray_image,5)
+    BWImage = blur_image > threshold_otsu(blur_image)
 
-dart_img =imread("dart20.jpg")   
+    ### image fill
+    seed = np.copy(~BWImage)
+    seed[1:-1, 1:-1] = (~BWImage).max()
+    mask = ~BWImage
+    background = reconstruction(seed, mask, method='erosion')
+
+    ## cropping image
+    label_img = label(background)
+    region = regionprops(label_img)
+
+    max_index = get_max_index(region)
+
+    x1 = region[max_index].bbox[1] # min_col
+    x2 = region[max_index].bbox[3] # max_col
+    y1 = region[max_index].bbox[0] # min_row
+    y2 = region[max_index].bbox[2] # max_row
+
+    image = image[y1:y2,x1:x2]
+
+    return image
+
+board_img =imread("dartBoard2.jpg")
+
+dart_img =imread("dart12.jpg")   
 
 get_score(board_img,dart_img)
 
