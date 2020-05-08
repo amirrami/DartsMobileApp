@@ -10,7 +10,8 @@ this project is implemented in python for the algorithm and flutter for the appl
 <br>
 <img src="test_images/dartBoard1.jpg" width="250">
 <br>
-###Then this image is proccessed to obtain the regions of the board respectively like : 
+### this image is proccessed to obtain the regions of the board respectively like : 
+<br>
 |multipliers |double       |
 |------------|-------------|
 |<img src="debug_images/multipliers regions.jpg" width="250">|<img src="debug_images/double regions.jpg" width="250">|
