@@ -9,7 +9,7 @@ description of the project algorithm :
 
 first the user will input the first image without any dart on the board (background image)
 
-<img src = "test_images/dartBoard1.jpg" width="100">
+<img src = "test_images/dartBoard1.jpg" width="100" hight="100">
 
 
 
