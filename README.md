@@ -16,6 +16,9 @@ Then this image is proccessed to obtain the regions of the board respectively li
 <br>
 then the user inputs the board image that contains the dart want to detect it's score 
 <img src="test_images/dart11.jpg" width="150">
+<br>
+then align the two images (background - dart) using sift algorithm 
+<img src="debug_images/matches.jpg" width="150">
 
 
 
