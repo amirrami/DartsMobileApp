@@ -7,7 +7,7 @@ this project is implemented in python for the algorithm and flutter for the appl
 ## Background 
 description of the project algorithm :
 first the user will input the first image without any dart on the board (background image)
-<img src="test_images/dartBoard1.jpg" width="150">
+<img src="test_images/dartBoard1.jpg" width="250">
 <br>
 Then this image is proccessed to obtain the regions of the board respectively like : 
 |multipliers |double       |
@@ -15,10 +15,10 @@ Then this image is proccessed to obtain the regions of the board respectively li
 |<img src="debug_images/multipliers regions.jpg" width="250">|<img src="debug_images/double regions.jpg" width="250">|
 <br>
 then the user inputs the board image that contains the dart want to detect it's score 
-<img src="test_images/dart11.jpg" width="150">
+<img src="test_images/dart11.jpg" width="250">
 <br>
 then align the two images (background - dart) using sift algorithm 
-<img src="debug_images/matches.jpg" width="150">
+<img src="debug_images/matches.jpg" width="250">
 
 
 
