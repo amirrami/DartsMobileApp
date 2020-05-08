@@ -13,6 +13,9 @@ Then this image is proccessed to obtain the regions of the board respectively li
 |multipliers |double       |
 |------------|-------------|
 |<img src="debug_images/multipliers regions.jpg" width="250">|<img src="debug_images/double regions.jpg" width="250">|
+<br>
+
+
 
 
 
