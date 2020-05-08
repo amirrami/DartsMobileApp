@@ -25,7 +25,6 @@ this project is implemented in python for the algorithm and flutter for the appl
 ### finally get the difference between the two images to detect the the dart position 
 <br>
 <img src="debug_images/diff image.jpg" width="250">
-<br>
 
 
 
