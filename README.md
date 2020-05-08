@@ -8,7 +8,8 @@ this project is implemented in python for the algorithm and flutter for the appl
 description of the project algorithm :
 
 first the user will input the first image without any dart on the board (background image)
-![](test_images/dartBoard1.jpg)
+❮img src="test_images/dartBoard1.jpg" width ="100" ❯
+
 
 
 
