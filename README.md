@@ -11,7 +11,9 @@ first the user will input the first image without any dart on the board (backgro
 
 <img src = "test_images/dartBoard1.jpg" width="100" hight="100">
 
-then from this image will detect the regions area of the board and distinguish them 
+then from this image will detect the regions area of the board and distinguish them like:
+<img src = "debug_images/green regions.jpg" width="100" hight="100">
+
 
 then the user will input the dartboard image with the dart on the board (darts image)
 
