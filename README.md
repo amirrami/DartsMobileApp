@@ -21,6 +21,11 @@ then the user inputs the board image that contains the dart want to detect it's 
 <br>
 then align the two images (background - dart) using sift algorithm 
 <img src="debug_images/matches.jpg" width="250">
+<br>
+finally get the difference between the two images to detect the the dart position 
+<br>
+<img src="debug_images/diff image.jpg" width="250">
+<br>
 
 
 
