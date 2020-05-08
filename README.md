@@ -9,7 +9,8 @@ this project is implemented in python for the algorithm and flutter for the appl
 ### first the user will input the first image without any dart on the board (background image)
 <br>
 <img src="test_images/dartBoard1.jpg" width="250">
-### this image is proccessed to obtain the regions of the board respectively like : 
+
+#### this image is proccessed to obtain the regions of the board respectively like : 
 <br>
 |multipliers |double       |
 |------------|-------------|
