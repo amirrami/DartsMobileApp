@@ -13,8 +13,8 @@ first the user will input the first image without any dart on the board (backgro
 
 then from this image will detect the regions area of the board and distinguish them 
 
+1- <img src = "debug_images/green regions.jpg" width="100" hight="100">
 green region :
-<img src = "debug_images/green regions.jpg" width="100" hight="100">
 
 
 
