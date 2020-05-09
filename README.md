@@ -21,7 +21,7 @@ this project is implemented in python for the algorithm and flutter for the appl
 
 |outerBull   |innerBull    |
 |------------|-------------|
-|<img src="debug_images/outercull regions.jpg" width="450">|<img src="debug_images/innerbull regions.jpg" width="450">|
+|<img src="debug_images/outerbull regions.jpg" width="450">|<img src="debug_images/innerbull regions.jpg" width="450">|
 
 ### The user inputs the board image that contains the dart want to detect it's score 
 <br>
