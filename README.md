@@ -13,11 +13,11 @@ this project is implemented in python for the algorithm and flutter for the appl
 ### This image is proccessed to obtain the regions of the board respectively like : 
 |multipliers |triple       |
 |------------|-------------|
-|<img src="debug_images/multipliers regions.jpg" width="250">|<img src="debug_images/triple regions.jpg" width="250">|
+|<img src="debug_images/multipliers regions.jpg" width="350">|<img src="debug_images/triple regions.jpg" width="350">|
 
 |double      |single       |
 |------------|-------------|
-|<img src="debug_images/double regions.jpg" width="250">|<img src="debug_images/sigle regions.jpg" width="250">|
+|<img src="debug_images/double regions.jpg" width="350">|<img src="debug_images/sigle regions.jpg" width="350">|
 
 ### The user inputs the board image that contains the dart want to detect it's score 
 <br>
