@@ -21,15 +21,15 @@ this project is implemented in python for the algorithm and flutter for the appl
 
 ### The user inputs the board image that contains the dart want to detect it's score 
 <br>
-<img src="test_images/dart11.jpg" width="250">
+<img src="test_images/dart11.jpg" width="450">
 
 ### Align the two images (background - dart) using sift algorithm 
 
-<img src="debug_images/matches.jpg" width="250">
+<img src="debug_images/matches.jpg" width="450">
 
 ### finally get the difference between the two images to detect the the dart position 
 
-<img src="debug_images/diff image.jpg" width="250">
+<img src="debug_images/diff image.jpg" width="450">
 
 
 
