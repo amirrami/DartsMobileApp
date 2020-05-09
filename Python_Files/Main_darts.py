@@ -40,27 +40,34 @@ class Region:
 
 
 class Dart_Detection():
-    def __init__(self,boardImage):
+    def __init__(self):
         self.dartImage = None
         self.dartScore = None
-        self.boardImage = transform.rescale(boardImage, 0.8, anti_aliasing=True,multichannel=True)
-        self.boardImage = skimage.img_as_ubyte(self.boardImage)
+        self.boardImage = None
+        self.outputBoardImage = None
         self.myMask = Mask()
+        
+
+    def setDartBoardImage(self,dartBoard):
+        self.boardImage = transform.rescale(dartBoard, 0.8, anti_aliasing=True,multichannel=True)
+        self.boardImage = skimage.img_as_ubyte(self.boardImage)
         self.boardImage = utils.crop_image(self.boardImage)
         if(self.boardImage is not None):
             self.outputBoardImage = self.boardImage
 
-
     def computeScore(self,dart_image):    
         if(self.boardImage is None):
-            return False
+            return False,False
         else:
+            ### set output image
+            self.outputBoardImage = self.boardImage
+            ###scale dart image
             self.dartImage = transform.rescale(dart_image, 0.8, anti_aliasing=True,multichannel=True)
             self.dartImage = skimage.img_as_ubyte(self.dartImage)
             ### crop dart image
             self.dartImage = utils.crop_image(self.dartImage)
             if(self.dartImage is None):
-                return False
+                return False,False
             #### Create Pointmap that contain all regions of the dart board
             self.findRegionMasks()
 
@@ -68,7 +75,7 @@ class Dart_Detection():
             label_img = label(self.myMask.inner_bull)
             region = regionprops(label_img)
             if(len(region)==0):
-                return False
+                return False,False
             max_index = utils.get_max_index(region)
             center = region[max_index].centroid
 
@@ -113,7 +120,7 @@ class Dart_Detection():
             ###### Difference of 2 Images 
             diff = utils.mse(self.boardImage,self.dartImage)
             if(diff == 0):### the two images are the same
-                return False
+                return False,False
             diff_image = utils.computeDifference(cv2.cvtColor(self.dartImage,cv2.COLOR_RGB2GRAY),cv2.cvtColor(self.boardImage,cv2.COLOR_RGB2GRAY))
             dart = np.multiply(diff_image,self.myMask.board)
 
@@ -153,7 +160,7 @@ class Dart_Detection():
             cnts = imutils.grab_contours(cnts)
             cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 5)
 
-            return self.dartScore
+            return self.dartScore ,self.outputBoardImage
 
 
 
@@ -165,11 +172,11 @@ class Dart_Detection():
 
         ###detect red regions in the board
         redRegions = image[:,:,0]-grayImage
-        self.myMask.red = redRegions > threshold_otsu(redRegions)
+        self.myMask.red = redRegions > threshold_otsu(redRegions) + 0.05
 
         ###detect green regions in the board
         greenRegions = image[:,:,1]-grayImage
-        self.myMask.green = greenRegions > (-threshold_otsu(greenRegions))
+        self.myMask.green = greenRegions > (-threshold_otsu(greenRegions)) -0.05
 
         ###detect multipliers regions
         self.myMask.multipliers=self.myMask.red + self.myMask.green
@@ -279,23 +286,34 @@ class Dart_Detection():
         return score
 
 
-    def get_outputImage(self):
-        return self.outputBoardImage
 
+dart_detection = Dart_Detection()
 
-
-if __name__ == "__main__":
-    dartBoardImage = imread("../test_images/dartBoard2.jpg")
-    dart_detection = Dart_Detection(dartBoardImage)
+def setBackgroundImage(file):
+    dartBoardImage = imread(file)
+    global dart_detection
+    dart_detection.setDartBoardImage(dartBoardImage)
     if(dart_detection.boardImage is None):
-        print("please Take another photo with a clear DART BOARD !!!")
-        exit()
-    dartImage = imread("../test_images/dart7.jpg")
-    score = dart_detection.computeScore(dartImage)
-    if(score):
-        print(score)
-        imshow(dart_detection.get_outputImage())
-        plt.show()
+        return False
     else:
-        print("please Take another photo with a clear DART BOARD !!!")
-        exit()
+        return True
+
+def getScore(file):
+    dartImage = imread(file)
+    global dart_detection
+    score , outputimage = dart_detection.computeScore(dartImage)
+    if score is False:
+        return "Please take another dart Image",False
+    else:
+        return score,outputimage
+
+if setBackgroundImage("../test_images/dartBoard2.jpg"):
+    score ,outputImage = getScore("../test_images/dart14.jpg")
+    if outputImage is False:
+        print(score)
+    else:
+        print(score)
+        imshow(outputImage)
+        plt.show()
+else:
+    print("please take another board image")
