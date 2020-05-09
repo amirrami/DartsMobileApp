@@ -52,22 +52,11 @@ class Dart_Detection():
         self.boardImage = transform.rescale(dartBoard, 0.8, anti_aliasing=True,multichannel=True)
         self.boardImage = skimage.img_as_ubyte(self.boardImage)
         self.boardImage = utils.crop_image(self.boardImage)
+        
+        
         if(self.boardImage is not None):
             self.outputBoardImage = self.boardImage
 
-    def computeScore(self,dart_image):    
-        if(self.boardImage is None):
-            return False,False
-        else:
-            ### set output image
-            self.outputBoardImage = self.boardImage
-            ###scale dart image
-            self.dartImage = transform.rescale(dart_image, 0.8, anti_aliasing=True,multichannel=True)
-            self.dartImage = skimage.img_as_ubyte(self.dartImage)
-            ### crop dart image
-            self.dartImage = utils.crop_image(self.dartImage)
-            if(self.dartImage is None):
-                return False,False
             #### Create Pointmap that contain all regions of the dart board
             self.findRegionMasks()
 
@@ -77,7 +66,7 @@ class Dart_Detection():
             if(len(region)==0):
                 return False,False
             max_index = utils.get_max_index(region)
-            center = region[max_index].centroid
+            self.center = region[max_index].centroid
 
             ### Edge image for straight line detection
             grayBackgroundImage = rgb2gray(self.boardImage)
@@ -106,13 +95,27 @@ class Dart_Detection():
 
             ### construct the 20 region of the dart board
             regions_values = [10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5, 20, 1, 18, 4, 13, 6]
-            regions_details = []
+            self.regions_details = []
             for i in range(len(regions_values)):
                 region = Region()
                 region.minAngle = Angles[i]
                 region.maxAngle = Angles[np.mod(i+1,np.size(Angles))]
                 region.value = regions_values[i]
-                regions_details.append(region)
+                self.regions_details.append(region)
+
+    def computeScore(self,dart_image):    
+        if(self.boardImage is None):
+            return False,False
+        else:
+            ### set output image
+            self.outputBoardImage = self.boardImage
+            ###scale dart image
+            self.dartImage = transform.rescale(dart_image, 0.8, anti_aliasing=True,multichannel=True)
+            self.dartImage = skimage.img_as_ubyte(self.dartImage)
+            ### crop dart image
+            self.dartImage = utils.crop_image(self.dartImage)
+            if(self.dartImage is None):
+                return False,False
 
             ### align the two images using SIFT TECHNIQUE
             self.dartImage = utils.alignImages(self.dartImage,self.boardImage)
@@ -152,7 +155,7 @@ class Dart_Detection():
             extLeft = tuple(c[c[:, :, 0].argmin()][0])
 
             ### compare the xhit and yhit of the dart with board to know which region the dart hit
-            self.dartScore = self.find_hitRegion(xhit=extLeft[0],yhit=extLeft[1],center=center,region=regions_details)
+            self.dartScore = self.find_hitRegion(xhit=extLeft[0],yhit=extLeft[1],center=self.center,region=self.regions_details)
 
             ### draw a contour of the hit region
             hit_region = skimage.img_as_ubyte(self.myMask.hit)
@@ -161,8 +164,6 @@ class Dart_Detection():
             cv2.drawContours(self.outputBoardImage, cnts, -1, (50, 255, 50), 5)
 
             return self.dartScore ,self.outputBoardImage
-
-
 
 
     def findRegionMasks(self):
