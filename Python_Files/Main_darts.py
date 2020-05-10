@@ -6,7 +6,7 @@ from skimage.morphology import disk ,binary_dilation,binary_closing,closing
 from skimage.measure import label ,regionprops
 from skimage import feature , transform
 from skimage.filters import gaussian, threshold_otsu
-from skimage.io import imread, imshow
+from skimage.io import imread, imshow,imsave
 from skimage.color import rgb2gray
 from skimage.morphology import reconstruction
 from matplotlib import pyplot as plt
@@ -293,6 +293,7 @@ dart_detection = Dart_Detection()
 def setBackgroundImage(file):
     dartBoardImage = imread(file)
     global dart_detection
+    dart_detection = Dart_Detection()
     dart_detection.setDartBoardImage(dartBoardImage)
     if(dart_detection.boardImage is None):
         return False
@@ -304,17 +305,18 @@ def getScore(file):
     global dart_detection
     score , outputimage = dart_detection.computeScore(dartImage)
     if score is False:
-        return "Please take another dart Image",False
+        return False,False
     else:
-        return score,outputimage
+        imsave("static/images/outputImage.jpg",outputimage)
+        return score,"outputImage.jpg"
 
-if setBackgroundImage("../test_images/dartBoard2.jpg"):
+""" if setBackgroundImage("../test_images/dartBoard2.jpg"):
     score ,outputImage = getScore("../test_images/dart14.jpg")
     if outputImage is False:
         print(score)
     else:
         print(score)
-        imshow(outputImage)
+        imshow("static/images/"+outputImage)
         plt.show()
 else:
-    print("please take another board image")
+    print("please take another board image") """
