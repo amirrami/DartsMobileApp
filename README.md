@@ -25,7 +25,7 @@ this project is implemented in python for the algorithm and flutter for the appl
 
 ### Then the user inputs the board image that contains the dart want to detect it's score 
 <br>
-<img src="test_images/dart11.jpg" width="450">
+<img src="test_images/dart14.jpg" width="450">
 
 ### Align the two images (background - dart) using sift algorithm 
 
