@@ -31,9 +31,14 @@ this project is implemented in python for the algorithm and flutter for the appl
 
 <img src="debug_images/matches.jpg" width="450">
 
-### finally get the difference between the two images to detect the the dart position 
+### then get the difference between the two images to detect the the dart position and apply closing method 
 
-<img src="debug_images/diff image.jpg" width="450">
+|diff image  |after closing|
+|------------|-------------|
+|<img src="debug_images/diff image.jpg" width="450">|<img src="debug_images/affer closing with lin SE.jpg" width="450">|
+
+
+
 
 
 
