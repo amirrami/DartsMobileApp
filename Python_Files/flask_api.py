@@ -65,17 +65,17 @@ def get_score():
     print("File saved to to:", destination)
     upload.save(destination)
 
-    score , outputImage = getScore(destination)
+    score , _ = getScore(destination)
     # forward to processing page
     if score is False:
         return "Please take another dart Image"
     else:
-        return send_image(outputImage)#{"score":score} 
+        return {"score":score} 
 
 # retrieve file from 'static/images' directory
-@app.route('/static/images/<filename>')
-def send_image(filename):
-    return send_from_directory("static/images", filename)
+@app.route('/get_output_image',methods=["GET"])
+def send_image():
+    return send_from_directory("static/images", "outputImage.jpg")
 
 
 

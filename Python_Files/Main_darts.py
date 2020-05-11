@@ -55,7 +55,7 @@ class Dart_Detection():
         
         
         if(self.boardImage is not None):
-            self.outputBoardImage = self.boardImage
+            self.outputBoardImage = self.boardImage.copy()
 
             #### Create Pointmap that contain all regions of the dart board
             self.findRegionMasks()
@@ -108,7 +108,7 @@ class Dart_Detection():
             return False,False
         else:
             ### set output image
-            self.outputBoardImage = self.boardImage
+            self.outputBoardImage = self.boardImage.copy()
             ###scale dart image
             self.dartImage = transform.rescale(dart_image, 0.8, anti_aliasing=True,multichannel=True)
             self.dartImage = skimage.img_as_ubyte(self.dartImage)
@@ -289,6 +289,7 @@ class Dart_Detection():
 
 
 dart_detection = Dart_Detection()
+
 
 def setBackgroundImage(file):
     dartBoardImage = imread(file)
