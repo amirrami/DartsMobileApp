@@ -48,7 +48,6 @@ Detect the 20 Straight lines and their angles of interest
 <img src="debug_images/detectd lines.jpg" width="400">
 
 ### then get the difference between the two images to detect the the dart position and apply closing method 
-<br>
 |diff image  |after closing|
 |------------|-------------|
 |<img src="debug_images/diff image.jpg" width="400">|<img src="debug_images/affer closing with lin SE.jpg" width="400">|
