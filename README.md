@@ -37,15 +37,15 @@ morpholigical and diffrenences changes on these images we obtain the following r
 <br>
 <img src="test_images/dart14.jpg" width="400">
 
+### Detect 20 Sectors of the board 
+Detect the 20 Straight lines and their angles of interest 
+<br>
+<img src="debug_images/detectd lines.jpg" width="400">
 ### Align the two images 
 aligning the background and the dart image to make the dart image very close to the background image
 <br>
 <img src="debug_images/matches.jpg" width="400">
 
-### Detect 20 Sectors of the board 
-Detect the 20 Straight lines and their angles of interest 
-<br>
-<img src="debug_images/detectd lines.jpg" width="400">
 
 ### then get the difference between the two images to detect the the dart position and apply closing method 
 |diff image  |after closing|
@@ -63,17 +63,6 @@ Detect the 20 Straight lines and their angles of interest
 
 
 
-
-
-
-
-
-
-
-
-
-## Installation
-will be updated 
 
 
 
