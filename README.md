@@ -1,41 +1,61 @@
 # DartsMobileApp
 Android application based on Digital Image processing to detect darts scoring 
+# Team Members : 
+Amir rami zaref
+Andrew atef fathy
+Andrew morcos nagib
 
 ## Implementation
 this project is implemented in python for the algorithm and flutter for the application GUI
 
 ## Background 
 ### Description of the Project Algorithm :
-### First the user will input the first image without any dart on the board (background image)
+### First: the user will input the first image without any dart on the board like this image (background image)
 <br>
 <img src="test_images/dartBoard1.jpg" width="450">
+### This image is proccessed to get the regions of interest :
+first we get the red and green regions of the image then by adding these regions we get the multipliers then by making some 
+morpholigical and diffrenences changes on these images we obtain the following regions acts as a mask for our work 
+<br>
+|Red         |Green        |
+|------------|-------------|
+|<img src="debug_images/multipliers regions.jpg" width="400">|<img src="debug_images/triple regions.jpg" width="400">|
 
-### This image is proccessed to obtain the regions of the board respectively like : 
 |multipliers |triple       |
 |------------|-------------|
-|<img src="debug_images/multipliers regions.jpg" width="450">|<img src="debug_images/triple regions.jpg" width="450">|
+|<img src="debug_images/multipliers regions.jpg" width="400">|<img src="debug_images/triple regions.jpg" width="400">|
 
 |double      |single       |
 |------------|-------------|
-|<img src="debug_images/double regions.jpg" width="450">|<img src="debug_images/sigle regions.jpg" width="450">|
+|<img src="debug_images/double regions.jpg" width="400">|<img src="debug_images/sigle regions.jpg" width="400">|
 
 |outerBull   |innerBull    |
 |------------|-------------|
-|<img src="debug_images/outerbull regions.jpg" width="450">|<img src="debug_images/innerbull regions.jpg" width="450">|
+|<img src="debug_images/outerbull regions.jpg" width="400">|<img src="debug_images/innerbull regions.jpg" width="400">|
+
 
 ### Then the user inputs the board image that contains the dart want to detect it's score 
 <br>
-<img src="test_images/dart14.jpg" width="450">
+<img src="test_images/dart14.jpg" width="400">
 
-### Align the two images (background - dart) using sift algorithm 
+### Align the two images 
+aligning the background and the dart image to make the dart image very close to the background image
+<img src="debug_images/matches.jpg" width="400">
 
-<img src="debug_images/matches.jpg" width="450">
+### Detect 20 Sectors of the board 
+Detect the 20 Straight lines and their angles of interest 
+<img src="debug_images/detectd lines.jpg" width="400">
 
 ### then get the difference between the two images to detect the the dart position and apply closing method 
 
 |diff image  |after closing|
 |------------|-------------|
-|<img src="debug_images/diff image.jpg" width="450">|<img src="debug_images/affer closing with lin SE.jpg" width="450">|
+|<img src="debug_images/diff image.jpg" width="400">|<img src="debug_images/affer closing with lin SE.jpg" width="400">|
+
+### Then using the region props we detect the Apex of the arrow and it's coordinates and orientation 
+
+### Finally This is the output : 
+<img src="debug_images/Final Output.jpg" width="400">
 
 
 
